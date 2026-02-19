@@ -272,6 +272,14 @@
   margin-bottom: 0.35rem;
 }
 
+.detailMetaRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
 .detailNotes {
   font-size: 0.85rem;
   color: var(--muted);
@@ -282,7 +290,6 @@
 
 .discogsLink {
   display: inline-block;
-  margin-top: 1rem;
   font-weight: 500;
 }
 

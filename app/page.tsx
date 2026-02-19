@@ -231,11 +231,25 @@ export default function Home() {
                       {release.artists.map((a) => a.name).join(', ')}
                     </p>
                   ) : null}
-                  {release.year && (
-                    <p className={styles.detailMeta}>年份：{release.year}</p>
-                  )}
-                  {release.country && (
-                    <p className={styles.detailMeta}>国家/地区：{release.country}</p>
+                  {(release.year || release.country) && (
+                    <p className={styles.detailMetaRow}>
+                      {release.year && (
+                        <span className={styles.detailMeta}>年份：{release.year}</span>
+                      )}
+                      {release.country && (
+                        <span className={styles.detailMeta}>
+                          国家/地区：{release.country}
+                        </span>
+                      )}
+                      <a
+                        href={`https://www.discogs.com/release/${release.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.discogsLink}
+                      >
+                        Discogs
+                      </a>
+                    </p>
                   )}
                   {release.labels?.length ? (
                     <p className={styles.detailMeta}>
@@ -255,14 +269,6 @@ export default function Home() {
                       Matrix 编码：{matrixCodes.join(', ')}
                     </p>
                   )}
-                  <a
-                    href={release.resource_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.discogsLink}
-                  >
-                    Discogs
-                  </a>
                 </div>
               </div>
             );
