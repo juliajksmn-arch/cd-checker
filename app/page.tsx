@@ -18,6 +18,7 @@ type ReleaseDetail = {
   country?: string;
   barcode?: string[];
   identifiers?: { type: string; value: string }[];
+  images?: { type: string; uri: string; resource_url: string; uri150: string; width: number; height: number }[];
 };
 
 export default function Home() {
@@ -38,14 +39,19 @@ export default function Home() {
   const [modalLoading, setModalLoading] = useState(false);
   const [activeRelease, setActiveRelease] = useState<ReleaseDetail | null>(null);
 
-  const extractIfpiCodes = (identifiers: ReleaseDetail['identifiers'] | undefined) =>
+  const extractOuterSID = (identifiers: ReleaseDetail['identifiers'] | undefined) =>
     (identifiers ?? [])
-      .filter((id) => id.type.toLowerCase().includes('ifpi'))
+      .filter((id) => id.type.toLowerCase().includes('mastering sid code'))
+      .map((id) => id.value);
+
+  const extractInnerSID = (identifiers: ReleaseDetail['identifiers'] | undefined) =>
+    (identifiers ?? [])
+      .filter((id) => id.type.toLowerCase().includes('mould sid code'))
       .map((id) => id.value);
 
   const extractMatrixCodes = (identifiers: ReleaseDetail['identifiers'] | undefined) =>
     (identifiers ?? [])
-      .filter((id) => id.type.toLowerCase().includes('matrix'))
+      .filter((id) => id.type.toLowerCase().includes('matrix / runout'))
       .map((id) => id.value);
 
   const fetchReleases = useCallback(
@@ -120,7 +126,7 @@ export default function Home() {
   const normalizedCountry = (c?: string) => (c && c.trim() ? c.trim() : 'Unknown');
 
   // 现在 releaseDetails 就是所有的搜索结果（因为 per_page 设为了 50）
-  const countryCounts = releaseDetails.reduce<Record<string, number>>((acc, r) => {
+  const countryCounts = releaseDetails.reduce<Record<string, number>>((acc: Record<string, number>, r: ReleaseDetail) => {
     const key = normalizedCountry(r.country);
     acc[key] = (acc[key] ?? 0) + 1;
     return acc;
@@ -340,7 +346,12 @@ export default function Home() {
                 <>
                   <div className={styles.detail}>
                     <div className={styles.detailArt}>
-                      {activeRelease.cover_image || activeRelease.thumb ? (
+                      {activeRelease.images && activeRelease.images.length > 0 ? (
+                        <img
+                          src={activeRelease.images[0].uri}
+                          alt={activeRelease.title}
+                        />
+                      ) : activeRelease.cover_image || activeRelease.thumb ? (
                         <img
                           src={activeRelease.cover_image || activeRelease.thumb}
                           alt={activeRelease.title}
@@ -374,9 +385,14 @@ export default function Home() {
                           条形码：{activeRelease.barcode.join(', ')}
                         </p>
                       ) : null}
-                      {extractIfpiCodes(activeRelease.identifiers).length > 0 ? (
+                      {extractOuterSID(activeRelease.identifiers).length > 0 ? (
                         <p className={styles.detailMeta}>
-                          IFPI：{extractIfpiCodes(activeRelease.identifiers).join(', ')}
+                          外圈码：{extractOuterSID(activeRelease.identifiers).join(', ')}
+                        </p>
+                      ) : null}
+                      {extractInnerSID(activeRelease.identifiers).length > 0 ? (
+                        <p className={styles.detailMeta}>
+                          内圈码：{extractInnerSID(activeRelease.identifiers).join(', ')}
                         </p>
                       ) : null}
                       {extractMatrixCodes(activeRelease.identifiers).length > 0 ? (
@@ -384,6 +400,16 @@ export default function Home() {
                           Matrix 编码：{extractMatrixCodes(activeRelease.identifiers).join(', ')}
                         </p>
                       ) : null}
+                      <p className={styles.detailMetaRow} style={{ marginTop: '1rem' }}>
+                        <a
+                          href={`https://www.discogs.com/release/${activeRelease.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={styles.discogsLink}
+                        >
+                          Discogs
+                        </a>
+                      </p>
                     </div>
                   </div>
                 </>
