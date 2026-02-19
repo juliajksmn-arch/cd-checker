@@ -237,11 +237,6 @@ export default function Home() {
                   {release.country && (
                     <p className={styles.detailMeta}>国家/地区：{release.country}</p>
                   )}
-                  {release.formats?.length ? (
-                    <p className={styles.detailMeta}>
-                      格式：{release.formats.map((f) => f.name).join(', ')}
-                    </p>
-                  ) : null}
                   {release.labels?.length ? (
                     <p className={styles.detailMeta}>
                       厂牌：{release.labels.map((l) => l.name).join(', ')}
@@ -266,7 +261,7 @@ export default function Home() {
                     rel="noopener noreferrer"
                     className={styles.discogsLink}
                   >
-                    在 Discogs 上查看 →
+                    Discogs
                   </a>
                 </div>
               </div>
