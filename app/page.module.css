@@ -38,6 +38,78 @@
   margin-bottom: 0.75rem;
 }
 
+.resultsLayout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 820px) {
+  .resultsLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.filters {
+  position: sticky;
+  top: 1rem;
+}
+
+@media (max-width: 820px) {
+  .filters {
+    position: static;
+  }
+}
+
+.filterBlock {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.filterTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.filterItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0.5rem;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  border-radius: 10px;
+}
+
+.filterItem:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.filterItemActive {
+  background: rgba(124, 110, 232, 0.14);
+}
+
+.filterCount {
+  min-width: 2.25rem;
+  text-align: right;
+  padding: 0.1rem 0.35rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+}
+
+.resultsContent {
+  min-width: 0;
+}
+
 .uploadZone {
   position: relative;
   border: 2px dashed var(--border);
@@ -332,4 +404,27 @@
   padding-top: 2rem;
   color: var(--muted);
   font-size: 0.8rem;
+}
+
+.pagination {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.pagination button {
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

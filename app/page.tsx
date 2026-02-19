@@ -3,22 +3,6 @@
 import { useState, useCallback } from 'react';
 import styles from './page.module.css';
 
-type SearchResult = {
-  id: number;
-  title: string;
-  year?: string;
-  thumb?: string;
-  cover_image?: string;
-  resource_url: string;
-  type: string;
-  format?: string[];
-  label?: string[];
-  genre?: string[];
-  style?: string[];
-  country?: string;
-  barcode?: string[];
-};
-
 type ReleaseDetail = {
   id: number;
   title: string;
@@ -43,6 +27,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [releaseDetails, setReleaseDetails] = useState<ReleaseDetail[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [countryFilter, setCountryFilter] = useState<string>('All');
   const [dragOver, setDragOver] = useState(false);
 
   const extractIfpiCodes = (identifiers: ReleaseDetail['identifiers'] | undefined) =>
@@ -55,33 +42,69 @@ export default function Home() {
       .filter((id) => id.type.toLowerCase().includes('matrix'))
       .map((id) => id.value);
 
-  const onSearch = useCallback(async () => {
-    const q = barcode.trim();
-    if (!q) {
-      setError('请输入条形码');
-      return;
-    }
-    setError(null);
-    setReleaseDetails([]);
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/discogs?barcode=${encodeURIComponent(q)}`);
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || '请求失败');
+  const fetchReleases = useCallback(
+    async (targetPage: number) => {
+      const q = barcode.trim();
+      if (!q) {
+        setError('请输入条形码');
         return;
       }
-      const list: ReleaseDetail[] = data.releases || [];
-      if (list.length === 0) {
-        setError('未找到匹配的专辑');
-        return;
-      }
+      setError(null);
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `/api/discogs?barcode=${encodeURIComponent(q)}&page=${targetPage}`
+        );
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || '请求失败');
+          return;
+        }
+        const list: ReleaseDetail[] = data.releases || [];
+        if (list.length === 0) {
+          setError('未找到匹配的专辑');
+          setReleaseDetails([]);
+          setTotalPages(1);
+          setPage(1);
+          return;
+        }
 
-      setReleaseDetails(list);
-    } finally {
-      setLoading(false);
-    }
-  }, [barcode]);
+        const pagination = data.pagination as
+          | { page?: number; pages?: number }
+          | undefined;
+
+        setReleaseDetails(list);
+        setPage(pagination?.page ?? targetPage);
+        setTotalPages(pagination?.pages ?? 1);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [barcode]
+  );
+
+  const onSearch = useCallback(() => {
+    setReleaseDetails([]);
+    setPage(1);
+    setTotalPages(1);
+    setCountryFilter('All');
+    void fetchReleases(1);
+  }, [fetchReleases]);
+
+  const normalizedCountry = (c?: string) => (c && c.trim() ? c.trim() : 'Unknown');
+  const countryCounts = releaseDetails.reduce<Record<string, number>>((acc, r) => {
+    const key = normalizedCountry(r.country);
+    acc[key] = (acc[key] ?? 0) + 1;
+    return acc;
+  }, {});
+  const countryOptions = Object.entries(countryCounts)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([country, count]) => ({ country, count }));
+
+  const filteredReleaseDetails =
+    countryFilter === 'All'
+      ? releaseDetails
+      : releaseDetails.filter((r) => normalizedCountry(r.country) === countryFilter);
 
   const handleFile = useCallback((file: File | null) => {
     if (!file) {
@@ -188,70 +211,123 @@ export default function Home() {
       {releaseDetails.length > 0 && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>专辑详情</h2>
-          {releaseDetails.map((release) => {
-            const ifpiCodes = extractIfpiCodes(release.identifiers);
-            const matrixCodes = extractMatrixCodes(release.identifiers);
-            return (
-              <div key={release.id} className={styles.detail}>
-                <div className={styles.detailArt}>
-                  {release.cover_image || release.thumb ? (
-                    <img
-                      src={release.cover_image || release.thumb}
-                      alt={release.title}
-                    />
-                  ) : (
-                    <div className={styles.noArt}>无封面</div>
-                  )}
-                </div>
-                <div className={styles.detailInfo}>
-                  <h3 className={styles.detailTitle}>{release.title}</h3>
-                  {release.artists?.length ? (
-                    <p className={styles.detailArtists}>
-                      {release.artists.map((a) => a.name).join(', ')}
-                    </p>
-                  ) : null}
-                  {(release.year || release.country) && (
-                    <p className={styles.detailMetaRow}>
-                      {release.year && (
-                        <span className={styles.detailMeta}>年份：{release.year}</span>
-                      )}
-                      {release.country && (
-                        <span className={styles.detailMeta}>
-                          国家/地区：{release.country}
-                        </span>
-                      )}
-                      <a
-                        href={`https://www.discogs.com/release/${release.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={styles.discogsLink}
-                      >
-                        Discogs
-                      </a>
-                    </p>
-                  )}
-                  {release.labels?.length ? (
-                    <p className={styles.detailMeta}>
-                      厂牌：{release.labels.map((l) => l.name).join(', ')}
-                    </p>
-                  ) : null}
-                  {release.barcode?.length ? (
-                    <p className={styles.detailMeta}>
-                      条形码：{release.barcode.join(', ')}
-                    </p>
-                  ) : null}
-                  {ifpiCodes.length > 0 && (
-                    <p className={styles.detailMeta}>IFPI：{ifpiCodes.join(', ')}</p>
-                  )}
-                  {matrixCodes.length > 0 && (
-                    <p className={styles.detailMeta}>
-                      Matrix 编码：{matrixCodes.join(', ')}
-                    </p>
-                  )}
-                </div>
+          <div className={styles.resultsLayout}>
+            <aside className={styles.filters}>
+              <div className={styles.filterBlock}>
+                <div className={styles.filterTitle}>Country</div>
+                <button
+                  type="button"
+                  className={`${styles.filterItem} ${
+                    countryFilter === 'All' ? styles.filterItemActive : ''
+                  }`}
+                  onClick={() => setCountryFilter('All')}
+                >
+                  <span>All</span>
+                  <span className={styles.filterCount}>{releaseDetails.length}</span>
+                </button>
+                {countryOptions.map((opt) => (
+                  <button
+                    key={opt.country}
+                    type="button"
+                    className={`${styles.filterItem} ${
+                      countryFilter === opt.country ? styles.filterItemActive : ''
+                    }`}
+                    onClick={() => setCountryFilter(opt.country)}
+                  >
+                    <span>{opt.country}</span>
+                    <span className={styles.filterCount}>{opt.count}</span>
+                  </button>
+                ))}
               </div>
-            );
-          })}
+            </aside>
+
+            <div className={styles.resultsContent}>
+              {filteredReleaseDetails.map((release) => {
+                const ifpiCodes = extractIfpiCodes(release.identifiers);
+                const matrixCodes = extractMatrixCodes(release.identifiers);
+                return (
+                  <div key={release.id} className={styles.detail}>
+                    <div className={styles.detailArt}>
+                      {release.cover_image || release.thumb ? (
+                        <img
+                          src={release.cover_image || release.thumb}
+                          alt={release.title}
+                        />
+                      ) : (
+                        <div className={styles.noArt}>无封面</div>
+                      )}
+                    </div>
+                    <div className={styles.detailInfo}>
+                      <h3 className={styles.detailTitle}>{release.title}</h3>
+                      {release.artists?.length ? (
+                        <p className={styles.detailArtists}>
+                          {release.artists.map((a) => a.name).join(', ')}
+                        </p>
+                      ) : null}
+                      {(release.year || release.country) && (
+                        <p className={styles.detailMetaRow}>
+                          {release.year && (
+                            <span className={styles.detailMeta}>年份：{release.year}</span>
+                          )}
+                          <span className={styles.detailMeta}>
+                            国家/地区：{normalizedCountry(release.country)}
+                          </span>
+                          <a
+                            href={`https://www.discogs.com/release/${release.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.discogsLink}
+                          >
+                            Discogs
+                          </a>
+                        </p>
+                      )}
+                      {release.labels?.length ? (
+                        <p className={styles.detailMeta}>
+                          厂牌：{release.labels.map((l) => l.name).join(', ')}
+                        </p>
+                      ) : null}
+                      {release.barcode?.length ? (
+                        <p className={styles.detailMeta}>
+                          条形码：{release.barcode.join(', ')}
+                        </p>
+                      ) : null}
+                      {ifpiCodes.length > 0 && (
+                        <p className={styles.detailMeta}>IFPI：{ifpiCodes.join(', ')}</p>
+                      )}
+                      {matrixCodes.length > 0 && (
+                        <p className={styles.detailMeta}>
+                          Matrix 编码：{matrixCodes.join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {totalPages > 1 && (
+                <div className={styles.pagination}>
+                  <button
+                    type="button"
+                    onClick={() => void fetchReleases(page - 1)}
+                    disabled={loading || page <= 1}
+                  >
+                    上一页
+                  </button>
+                  <span>
+                    第 {page} / {totalPages} 页
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => void fetchReleases(page + 1)}
+                    disabled={loading || page >= totalPages}
+                  >
+                    下一页
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </section>
       )}
 
