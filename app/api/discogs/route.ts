@@ -49,8 +49,8 @@ export async function GET(request: NextRequest) {
     const url = new URL(DISCOGS_SEARCH);
     url.searchParams.set('barcode', barcode.trim());
     url.searchParams.set('type', 'release');
-    // 每页固定 5 条，通过分页查看全部结果
-    url.searchParams.set('per_page', '5');
+    // 增加每页条目到 50，以获取更全面的统计，且减少前端重复请求
+    url.searchParams.set('per_page', '50');
     url.searchParams.set('page', String(page));
 
     const res = await fetch(url.toString(), { headers });
@@ -62,34 +62,10 @@ export async function GET(request: NextRequest) {
       );
     }
     const searchData = await res.json();
-    const results: Array<{ id?: number }> = searchData.results ?? [];
 
-    if (!results.length) {
-      return NextResponse.json({
-        releases: [],
-        pagination: searchData.pagination ?? {
-          page,
-          pages: 1,
-          per_page: 5,
-          items: 0,
-        },
-      });
-    }
-
-    const detailResponses = await Promise.all(
-      results
-        .map((item) => item.id)
-        .filter((id): id is number => typeof id === 'number')
-        .map((id) =>
-          fetch(`${DISCOGS_RELEASE}/${id}`, { headers }).then(async (r) =>
-            r.ok ? r.json() : null
-          )
-        )
-    );
-
-    const releases = detailResponses.filter((d) => d != null);
+    // 直接返回搜索结果，不再自动依次查询详情，以减少卡顿
     return NextResponse.json({
-      releases,
+      releases: searchData.results ?? [],
       pagination: searchData.pagination,
     });
   } catch (e) {
