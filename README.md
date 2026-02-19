@@ -38,18 +38,20 @@ python app.py
 
 打开浏览器访问 `http://localhost:5000`
 
+## 部署到 Vercel (推荐)
+
+本项目已优化，可一键部署至 Vercel：
+
+1.  **连接 GitHub**：在 Vercel 中导入此仓库。
+2.  **设置环境变量**：在 Vercel Project Settings -> Environment Variables 中添加：
+    - `DISCOGS_TOKEN`: 你的 Discogs 令牌。
+    - `DISCOGS_USER_AGENT` (可选): 你的 User Agent。
+3.  **部署**：Vercel 会自动根据 `vercel.json` 和 `requirements.txt` 完成构建。
+
+> [!NOTE]
+> 在 Vercel 等 Serverless 环境中，上传的图片将存储在 `/tmp` 目录。由于 Serverless 的特性，这些文件是**临时**的，在实例重启后会丢失。如需持久化存储，建议接入 S3 或 OSS。
+
 ## 云端运行（GitHub Codespaces / Replit / Railway 等）
-
-任何支持 Python 的云平台均可运行，无需构建步骤：
-
-```bash
-pip install -r requirements.txt
-python app.py
-```
-
-- **GitHub Codespaces**：打开仓库 → Code → Codespaces → New，终端运行上述命令，浏览器会自动转发端口
-- **Replit**：Import from GitHub，运行 `python app.py`
-- **Railway**：连接 GitHub 仓库，自动识别 `requirements.txt` 并部署
 
 ## 功能
 

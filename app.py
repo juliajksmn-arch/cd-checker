@@ -10,7 +10,12 @@ app = Flask(__name__)
 
 DISCOGS_SEARCH = 'https://api.discogs.com/database/search'
 DISCOGS_RELEASE = 'https://api.discogs.com/releases'
-UPLOAD_FOLDER = os.path.join(app.static_folder, 'uploads')
+# Vercel's /tmp is the only writable directory in serverless functions
+if os.environ.get('VERCEL'):
+    UPLOAD_FOLDER = '/tmp/uploads'
+else:
+    UPLOAD_FOLDER = os.path.join(app.static_folder, 'uploads')
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
@@ -80,8 +85,14 @@ def upload():
     filename = secure_filename(f.filename)
     save_path = os.path.join(UPLOAD_FOLDER, filename)
     f.save(save_path)
-    url = f'/static/uploads/{filename}'
+    # Return the URL for the newly added route
+    url = f'/uploads/{filename}'
     return jsonify({'url': url})
+
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
 
 
 if __name__ == '__main__':
