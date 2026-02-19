@@ -1,3 +1,32 @@
+.cardMetaHighlight {
+    color: #7c6ee8 !important;
+    font-weight: 700;
+    background: rgba(124,110,232,0.10);
+    border-radius: 6px;
+    padding: 0.1em 0.5em;
+    margin-right: 0.5em;
+}
+.detailMainRow {
+    display: flex;
+    flex-direction: row;
+    gap: 1.2rem;
+    align-items: flex-start;
+}
+@media (max-width: 700px) {
+    .detailMainRow {
+        flex-direction: column;
+        gap: 0.7rem;
+    }
+}
+.detailArt {
+    margin-bottom: 0;
+    box-shadow: 0 2px 8px 0 rgba(60,60,80,0.10);
+    flex-shrink: 0;
+}
+.detailInfo {
+    margin-bottom: 0.8rem;
+    min-width: 0;
+}
 /* =====================
    CSS Variables / Reset
    ===================== */
@@ -373,23 +402,108 @@ textarea {
 /* =====================
    Detail (inside modal)
    ===================== */
-.detail {
-    display: flex;
-    flex-direction: row;
-    gap: 1.25rem;
+
+
+
+.detailFlex {
+    display: block;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    align-items: flex-start;
-    margin-bottom: 1rem;
+    border-radius: calc(var(--radius) * 1.5);
+    padding: 2.2rem 2.2rem 2.2rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 6px 32px 0 rgba(60,60,80,0.10);
 }
 
-@media (max-width: 520px) {
-    .detail {
-        flex-direction: column;
-        align-items: stretch;
+@media (max-width: 900px) {
+    .detailFlex {
+        padding: 1.2rem;
     }
+}
+
+.detailCol {
+    width: 100%;
+    min-width: 0;
+    margin-bottom: 1.2rem;
+}
+.detailColMain {
+    background: rgba(255,255,255,0.03);
+    border-radius: var(--radius);
+    padding: 1.2rem 1.2rem 1.2rem 0.5rem;
+    box-shadow: 0 2px 12px 0 rgba(60,60,80,0.06);
+    margin-bottom: 1.2rem;
+}
+.detailColMatrix {
+    padding-left: 0;
+    margin-bottom: 0;
+}
+.matrixBlock {
+    background: rgba(124,110,232,0.06);
+    border: 1.5px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 1.2rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px 0 rgba(124,110,232,0.07);
+}
+.matrixBlockTitle {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 1.1rem;
+    letter-spacing: 0.04em;
+    border-left: 3px solid var(--accent);
+    padding-left: 0.5em;
+}
+.matrixList {
+    margin: 0 0 0.5rem 0;
+    padding: 0 0 0 1.2em;
+    list-style: disc;
+}
+.variantGroup {
+    margin-top: 0.7rem;
+    padding: 0.7rem 0.5rem 0.7rem 0.5rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    margin-bottom: 0.7rem;
+}
+.variantTitle {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.4rem;
+    letter-spacing: 0.04em;
+}
+.detailArt {
+    margin-bottom: 1.2rem;
+    box-shadow: 0 2px 8px 0 rgba(60,60,80,0.10);
+}
+.detailInfo {
+    margin-bottom: 0.8rem;
+}
+.detailTitle {
+    font-size: 1.3rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    color: var(--accent);
+    letter-spacing: 0.01em;
+}
+.detailArtists {
+    color: var(--muted);
+    font-size: 1.05rem;
+    margin-bottom: 0.7rem;
+}
+.detailMetaRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.7rem;
+    margin-bottom: 0.4rem;
+}
+.detailMeta {
+    font-size: 0.93rem;
+    color: var(--text);
+    margin-bottom: 0.2rem;
 }
 
 .detailArt {

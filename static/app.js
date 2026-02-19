@@ -53,35 +53,64 @@ function setLoading(state) {
 
 function groupIdentifiers(identifiers) {
     if (!identifiers || !identifiers.length) return [];
+    // 先按 variant 拆分
     const groups = {};
     const variants = [];
 
     identifiers.forEach(id => {
         const type = id.type.toLowerCase();
         const value = id.value;
+        // 允许 Variant 1/2/3...，否则全部归为 Standard
         const variantMatch = id.type.match(/\((Variant\s*\d+)\)/i);
         const variantLabel = variantMatch ? variantMatch[1] : 'Standard';
 
         if (!groups[variantLabel]) {
-            groups[variantLabel] = {};
+            groups[variantLabel] = [];
             variants.push(variantLabel);
         }
 
-        if (type.includes('matrix / runout')) {
-            groups[variantLabel].matrix = value;
-        } else if (type.includes('mastering sid code')) {
-            groups[variantLabel].outerSID = value;
-        } else if (type.includes('mould sid code')) {
-            groups[variantLabel].innerSID = value;
+        // 只收集 matrix/IFPI 相关类型
+        if (
+            type.includes('matrix / runout') ||
+            type.includes('mastering sid code') ||
+            type.includes('mould sid code') ||
+            type.includes('ifpi')
+        ) {
+            groups[variantLabel].push({
+                type: id.type,
+                value: value
+            });
         }
     });
 
-    return variants
-        .map((v, index) => ({
-            label: variants.length > 1 ? `组合 ${index + 1}` : '',
-            ...groups[v],
-        }))
-        .filter(g => g.matrix || g.outerSID || g.innerSID);
+    // 进一步将同一 variant 下的多组 matrix/IFPI 组合分组
+    // 例如：matrix/outerSID/innerSID 顺序出现，遇到下一个 matrix/outerSID/innerSID 就新开一组
+    const result = [];
+    variants.forEach((variant, vIdx) => {
+        const items = groups[variant];
+        if (!items.length) return;
+        let current = { label: variants.length > 1 ? `组合 ${vIdx + 1}` : '', matrix: '', outerSID: '', innerSID: '' };
+        items.forEach((item, idx) => {
+            const t = item.type.toLowerCase();
+            if (t.includes('matrix / runout')) {
+                // 如果当前已有 matrix，说明是新一组
+                if (current.matrix || current.outerSID || current.innerSID) {
+                    result.push(current);
+                    current = { label: variants.length > 1 ? `组合 ${vIdx + 1}` : '', matrix: '', outerSID: '', innerSID: '' };
+                }
+                current.matrix = item.value;
+            } else if (t.includes('mastering sid code') || t.includes('ifpi l')) {
+                current.outerSID = item.value;
+            } else if (t.includes('mould sid code') || t.includes('ifpi 9') || t.includes('ifpi 94') || t.includes('ifpi a')) {
+                current.innerSID = item.value;
+            }
+        });
+        // 最后一组
+        if (current.matrix || current.outerSID || current.innerSID) {
+            result.push(current);
+        }
+    });
+    return result;
 }
 
 /* =====================
@@ -140,22 +169,22 @@ function renderCards() {
         resultsEl.innerHTML = '<p style="color:var(--muted);text-align:center;padding:2rem 0;">暂无结果</p>';
         return;
     }
-    resultsEl.innerHTML = filteredReleases.map(r => `
-    <div class="card" data-id="${r.id}">
-      <div class="cardThumb">
-        ${r.cover_image || r.thumb
-            ? `<img src="${escHtml(r.cover_image || r.thumb)}" alt="${escHtml(r.title)}" loading="lazy" />`
-            : `<div class="noArt">无封面</div>`}
-      </div>
-      <div class="cardBody">
-        <h3 class="cardTitle">${escHtml(r.title)}</h3>
-        <div class="detailMetaRow">
-          ${r.year ? `<span class="cardYear">${r.year}</span>` : ''}
-          <span class="cardMeta">${escHtml(normalizedCountry(r.country))}</span>
+        resultsEl.innerHTML = filteredReleases.map(r => `
+        <div class="card" data-id="${r.id}">
+            <div class="cardThumb">
+                ${r.cover_image || r.thumb
+                        ? `<img src="${escHtml(r.cover_image || r.thumb)}" alt="${escHtml(r.title)}" loading="lazy" />`
+                        : `<div class="noArt">无封面</div>`}
+            </div>
+            <div class="cardBody">
+                <h3 class="cardTitle">${escHtml(r.title)}</h3>
+                <div class="detailMetaRow">
+                    ${r.year ? `<span class="cardYear cardMetaHighlight">${r.year}</span>` : ''}
+                    <span class="cardMeta cardMetaHighlight">${escHtml(normalizedCountry(r.country))}</span>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  `).join('');
+    `).join('');
 
     resultsEl.querySelectorAll('.card').forEach(card => {
         card.addEventListener('click', () => openModal(Number(card.dataset.id)));
@@ -240,32 +269,43 @@ function renderModal(r) {
     const barcodeHtml = r.barcode?.length
         ? `<p class="detailMeta">条形码：${escHtml(r.barcode.join(', '))}</p>` : '';
 
-    const groupsHtml = groups.map((g, i) => `
-    <div class="variantGroup">
-      ${g.label ? `<div class="variantTitle">${escHtml(g.label)}</div>` : ''}
-      ${g.matrix ? `<p class="detailMeta"><span class="metaLabel">Matrix 编码：</span>${escHtml(g.matrix)}</p>` : ''}
-      ${g.outerSID ? `<p class="detailMeta"><span class="metaLabel">外圈码：</span>${escHtml(g.outerSID)}</p>` : ''}
-      ${g.innerSID ? `<p class="detailMeta"><span class="metaLabel">内圈码：</span>${escHtml(g.innerSID)}</p>` : ''}
-    </div>
-  `).join('');
+    const groupsHtml = groups.length > 0 ? groups.map((g, i) => `
+        <div class="variantGroup">
+            ${g.label ? `<div class="variantTitle">${escHtml(g.label)}</div>` : ''}
+            <ul class="matrixList">
+                ${g.matrix ? `<li><span class="metaLabel">Matrix 编码：</span>${escHtml(g.matrix)}</li>` : ''}
+                ${g.outerSID ? `<li><span class="metaLabel">外圈码：</span>${escHtml(g.outerSID)}</li>` : ''}
+                ${g.innerSID ? `<li><span class="metaLabel">内圈码：</span>${escHtml(g.innerSID)}</li>` : ''}
+            </ul>
+        </div>
+    `).join('') : '<div class="variantGroup"><span>无 Matrix/SID 信息</span></div>';
 
     modalBody.innerHTML = `
-    <div class="detail">
-      <div class="detailArt">
-        ${imgSrc
-            ? `<img src="${escHtml(imgSrc)}" alt="${escHtml(r.title)}" />`
-            : `<div class="noArt">无封面</div>`}
+    <div class="detail detailFlex">
+      <div class="detailCol detailColMain">
+        <div class="detailMainRow">
+          <div class="detailArt">
+            ${imgSrc
+                ? `<img src="${escHtml(imgSrc)}" alt="${escHtml(r.title)}" />`
+                : `<div class="noArt">无封面</div>`}
+          </div>
+          <div class="detailInfo">
+            <h2 class="detailTitle">${escHtml(r.title)}</h2>
+            ${artistsHtml}
+            <p class="detailMetaRow">
+              ${r.year ? `<span class="detailMeta">年份：${r.year}</span>` : ''}
+              <span class="detailMeta">国家/地区：${escHtml(normalizedCountry(r.country))}</span>
+            </p>
+            ${labelsHtml}
+            ${barcodeHtml}
+          </div>
+        </div>
       </div>
-      <div class="detailInfo">
-        <h2 class="detailTitle">${escHtml(r.title)}</h2>
-        ${artistsHtml}
-        <p class="detailMetaRow">
-          ${r.year ? `<span class="detailMeta">年份：${r.year}</span>` : ''}
-          <span class="detailMeta">国家/地区：${escHtml(normalizedCountry(r.country))}</span>
-        </p>
-        ${labelsHtml}
-        ${barcodeHtml}
-        ${groupsHtml}
+      <div class="detailCol detailColMatrix">
+        <div class="matrixBlock">
+          <div class="matrixBlockTitle">盘面码</div>
+          ${groupsHtml}
+        </div>
         <div class="modalFooter">
           <a href="https://www.discogs.com/release/${r.id}" target="_blank" rel="noopener noreferrer" class="discogsLink">
             在 Discogs 上查看详情
