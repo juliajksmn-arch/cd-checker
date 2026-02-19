@@ -39,20 +39,38 @@ export default function Home() {
   const [modalLoading, setModalLoading] = useState(false);
   const [activeRelease, setActiveRelease] = useState<ReleaseDetail | null>(null);
 
-  const extractOuterSID = (identifiers: ReleaseDetail['identifiers'] | undefined) =>
-    (identifiers ?? [])
-      .filter((id) => id.type.toLowerCase().includes('mastering sid code'))
-      .map((id) => id.value);
+  const groupIdentifiers = (identifiers: ReleaseDetail['identifiers'] | undefined) => {
+    if (!identifiers) return [];
 
-  const extractInnerSID = (identifiers: ReleaseDetail['identifiers'] | undefined) =>
-    (identifiers ?? [])
-      .filter((id) => id.type.toLowerCase().includes('mould sid code'))
-      .map((id) => id.value);
+    const groups: Record<string, { matrix?: string; outerSID?: string; innerSID?: string }> = {};
+    const variants: string[] = [];
 
-  const extractMatrixCodes = (identifiers: ReleaseDetail['identifiers'] | undefined) =>
-    (identifiers ?? [])
-      .filter((id) => id.type.toLowerCase().includes('matrix / runout'))
-      .map((id) => id.value);
+    identifiers.forEach((id) => {
+      const type = id.type.toLowerCase();
+      const value = id.value;
+
+      const variantMatch = id.type.match(/\((Variant\s*\d+)\)/i);
+      const variantLabel = variantMatch ? variantMatch[1] : 'Standard';
+
+      if (!groups[variantLabel]) {
+        groups[variantLabel] = {};
+        variants.push(variantLabel);
+      }
+
+      if (type.includes('matrix / runout')) {
+        groups[variantLabel].matrix = value;
+      } else if (type.includes('mastering sid code')) {
+        groups[variantLabel].outerSID = value;
+      } else if (type.includes('mould sid code')) {
+        groups[variantLabel].innerSID = value;
+      }
+    });
+
+    return variants.map((v, index) => ({
+      label: variants.length > 1 ? `组合 ${index + 1}` : '',
+      ...groups[v],
+    })).filter(g => g.matrix || g.outerSID || g.innerSID);
+  };
 
   const fetchReleases = useCallback(
     async (targetPage: number) => {
@@ -309,8 +327,9 @@ export default function Home() {
                     <div className={styles.cardThumb}>
                       {release.cover_image || release.thumb ? (
                         <img
-                          src={release.thumb || release.cover_image}
+                          src={release.cover_image || release.thumb}
                           alt={release.title}
+                          loading="lazy"
                         />
                       ) : (
                         <div className={styles.noArt}>无封面</div>
@@ -385,31 +404,38 @@ export default function Home() {
                           条形码：{activeRelease.barcode.join(', ')}
                         </p>
                       ) : null}
-                      {extractOuterSID(activeRelease.identifiers).length > 0 ? (
-                        <p className={styles.detailMeta}>
-                          外圈码：{extractOuterSID(activeRelease.identifiers).join(', ')}
-                        </p>
-                      ) : null}
-                      {extractInnerSID(activeRelease.identifiers).length > 0 ? (
-                        <p className={styles.detailMeta}>
-                          内圈码：{extractInnerSID(activeRelease.identifiers).join(', ')}
-                        </p>
-                      ) : null}
-                      {extractMatrixCodes(activeRelease.identifiers).length > 0 ? (
-                        <p className={styles.detailMeta}>
-                          Matrix 编码：{extractMatrixCodes(activeRelease.identifiers).join(', ')}
-                        </p>
-                      ) : null}
-                      <p className={styles.detailMetaRow} style={{ marginTop: '1rem' }}>
+
+                      {groupIdentifiers(activeRelease.identifiers).map((group, idx) => (
+                        <div key={idx} className={styles.variantGroup}>
+                          {group.label && <div className={styles.variantTitle}>{group.label}</div>}
+                          {group.matrix && (
+                            <p className={styles.detailMeta}>
+                              <span className={styles.metaLabel}>Matrix 编码：</span>{group.matrix}
+                            </p>
+                          )}
+                          {group.outerSID && (
+                            <p className={styles.detailMeta}>
+                              <span className={styles.metaLabel}>外圈码：</span>{group.outerSID}
+                            </p>
+                          )}
+                          {group.innerSID && (
+                            <p className={styles.detailMeta}>
+                              <span className={styles.metaLabel}>内圈码：</span>{group.innerSID}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+
+                      <div className={styles.modalFooter}>
                         <a
                           href={`https://www.discogs.com/release/${activeRelease.id}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className={styles.discogsLink}
                         >
-                          Discogs
+                          在 Discogs 上查看详情
                         </a>
-                      </p>
+                      </div>
                     </div>
                   </div>
                 </>
