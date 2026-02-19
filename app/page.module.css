@@ -218,13 +218,14 @@
 }
 
 .detail {
-  display: grid;
-  grid-template-columns: 200px 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.5rem;
+  align-items: stretch;
 }
 
 @media (max-width: 520px) {
@@ -238,6 +239,8 @@
   border-radius: var(--radius);
   overflow: hidden;
   background: var(--border);
+  max-width: 260px;
+  margin: 0 auto;
 }
 
 .detailArt img {
