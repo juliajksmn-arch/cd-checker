@@ -1,115 +1,75 @@
-# CD Checker - Discogs 专辑查询工具
+# CD Checker
 
-一个基于 Next.js 的 Web 应用，可以通过上传封面图片或输入条形码来查询 Discogs 数据库中的专辑信息。
-
-## 功能特性
-
-- 📸 **图片上传**：支持拖拽或点击上传专辑封面图片
-- 🔢 **条形码查询**：输入条形码快速搜索专辑
-- 🎵 **Discogs API 集成**：调用 Discogs API 获取详细的专辑信息
-- 📋 **详细信息展示**：显示专辑标题、艺术家、年份、格式、厂牌、流派、曲目列表等
+从 Discogs 查询 CD 专辑信息、Matrix 编码与 SID 码。
 
 ## 技术栈
 
-- **Next.js 14** (App Router)
-- **React 18**
-- **TypeScript**
-- **CSS Modules**
+- **后端**：Python + Flask
+- **前端**：原生 HTML / CSS / JavaScript
+- **API**：Discogs REST API
 
-## 安装与运行
+## 快速开始
 
 ### 1. 安装依赖
 
 ```bash
-npm install
+pip install -r requirements.txt
 ```
 
-### 2. 配置 Discogs API
-
-1. 访问 [Discogs Developer Settings](https://www.discogs.com/settings/developers)
-2. 创建一个新的应用
-3. 获取 Personal Access Token
-4. 复制 `.env.example` 为 `.env.local`：
+### 2. 配置环境变量
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env
 ```
 
-5. 在 `.env.local` 中填入你的 Discogs Token：
+编辑 `.env`，填入你的 Discogs Personal Access Token：
 
 ```
-DISCOGS_TOKEN=your_discogs_personal_access_token
+DISCOGS_TOKEN=your_token_here
 ```
 
-### 3. 运行开发服务器
+获取 Token：打开 [Discogs Developer Settings](https://www.discogs.com/settings/developers)，创建或使用已有应用，生成 Personal Access Token。
+
+### 3. 启动服务
 
 ```bash
-npm run dev
+python app.py
 ```
 
-访问 [http://localhost:3000](http://localhost:3000) 查看应用。
+打开浏览器访问 `http://localhost:5000`
 
-### 4. 构建生产版本
+## 云端运行（GitHub Codespaces / Replit / Railway 等）
+
+任何支持 Python 的云平台均可运行，无需构建步骤：
 
 ```bash
-npm run build
-npm start
+pip install -r requirements.txt
+python app.py
 ```
 
-## 使用说明
+- **GitHub Codespaces**：打开仓库 → Code → Codespaces → New，终端运行上述命令，浏览器会自动转发端口
+- **Replit**：Import from GitHub，运行 `python app.py`
+- **Railway**：连接 GitHub 仓库，自动识别 `requirements.txt` 并部署
 
-1. **上传图片**：将专辑封面图片拖拽到上传区域，或点击选择文件
-2. **输入条形码**：在输入框中输入专辑的条形码（例如：`5012394144777`）
-3. **查询**：点击"查询"按钮或按 Enter 键
-4. **查看结果**：浏览搜索结果，点击任意专辑卡片查看详细信息
-5. **查看详情**：在详情页面可以看到完整的专辑信息，包括曲目列表
+## 功能
+
+- 输入条形码查询 Discogs 专辑数据库
+- 按国家/地区筛选结果
+- 点击专辑卡片查看详情（封面大图、Matrix / Outer SID / Inner SID 编码）
+- 支持图片上传（本地存储至 `static/uploads/`）
+- 拖拽上传支持
 
 ## 项目结构
 
 ```
 cd-checker/
-├── app/
-│   ├── api/
-│   │   ├── discogs/      # Discogs API 代理路由
-│   │   └── upload/        # 图片上传 API 路由
-│   ├── globals.css        # 全局样式
-│   ├── layout.tsx         # 根布局
-│   ├── page.tsx           # 主页面组件
-│   └── page.module.css    # 页面样式
-├── public/
-│   └── uploads/           # 上传的图片存储目录（自动创建）
-├── .env.example           # 环境变量示例
-├── next.config.js         # Next.js 配置
-└── package.json           # 项目依赖
+├── app.py               ← Flask 后端
+├── requirements.txt     ← Python 依赖
+├── .env.example         ← 环境变量示例
+├── templates/
+│   └── index.html       ← 页面模板
+└── static/
+    ├── style.css        ← 样式
+    ├── app.js           ← 前端逻辑
+    └── uploads/         ← 上传图片（自动创建）
 ```
-
-## API 说明
-
-### Discogs API
-
-应用通过 `/api/discogs` 路由代理 Discogs API 请求：
-
-- `GET /api/discogs?barcode={barcode}` - 通过条形码搜索专辑
-- `GET /api/discogs?releaseId={id}` - 获取专辑详细信息
-
-### 图片上传 API
-
-- `POST /api/upload` - 上传图片文件，返回文件 URL
-
-## 注意事项
-
-- Discogs API 有速率限制：认证请求每分钟 60 次，未认证请求每分钟 25 次
-- 上传的图片存储在 `public/uploads/` 目录中
-- 请遵守 [Discogs API 使用条款](https://support.discogs.com/hc/articles/360009334593-API-Terms-of-Use)
-
-## 部署到 GitHub + Vercel
-
-详细步骤见 **[DEPLOY.md](./DEPLOY.md)**，包括：
-
-- 如何把项目推送到 GitHub
-- 如何在 Vercel 上导入项目并配置环境变量（`DISCOGS_TOKEN`、可选 `BLOB_READ_WRITE_TOKEN`）
-- 部署后如何更新
-
-## 许可证
-
-MIT

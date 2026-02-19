@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CD Checker — 专辑条形码查询</title>
+  <meta name="description" content="上传封面或输入条形码，从 Discogs 查询 CD 专辑信息、Matrix 编码与 SID 码" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="main">
+    <header class="header">
+      <h1 class="title">CD Checker</h1>
+      <p class="subtitle">上传封面或输入条形码，从 Discogs 查询专辑信息</p>
+    </header>
+
+    <!-- 图片上传 -->
+    <section class="section">
+      <h2 class="sectionTitle">图片上传</h2>
+      <div class="uploadZone" id="uploadZone">
+        <input type="file" accept="image/*" class="fileInput" id="fileInput" />
+        <div id="uploadPlaceholder" class="uploadHint">拖拽图片到此处，或点击选择文件</div>
+        <div id="previewWrap" class="previewWrap" style="display:none;">
+          <img id="previewImg" class="previewImg" src="" alt="上传预览" />
+          <span id="uploadedBadge" class="uploadedBadge" style="display:none;">已上传</span>
+          <button type="button" class="clearBtn" id="clearBtn">清除</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 条形码查询 -->
+    <section class="section">
+      <h2 class="sectionTitle">条形码查询</h2>
+      <div class="barcodeRow">
+        <input
+          type="text"
+          id="barcodeInput"
+          class="barcodeInput"
+          placeholder="输入专辑条形码（如 5012394144777）"
+        />
+        <button type="button" id="searchBtn" class="searchBtn">查询</button>
+      </div>
+    </section>
+
+    <!-- 错误提示 -->
+    <div id="error" class="error" style="display:none;"></div>
+
+    <!-- 查询结果 -->
+    <section class="section" id="resultsSection" style="display:none;">
+      <div class="resultsHeader">
+        <h2 class="sectionTitle">专辑查询结果</h2>
+        <div class="pagination" id="pagination" style="display:none;">
+          <button type="button" id="prevBtn">上一页</button>
+          <span id="pageInfo"></span>
+          <button type="button" id="nextBtn">下一页</button>
+        </div>
+      </div>
+
+      <div class="resultsLayout">
+        <aside class="filters">
+          <div class="filterBlock">
+            <div class="filterTitle">Country</div>
+            <div id="filterList"></div>
+          </div>
+        </aside>
+        <div class="resultsContent">
+          <div class="results" id="results"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Modal -->
+    <div class="modalOverlay" id="modalOverlay" style="display:none;">
+      <div class="modalContent" id="modalContent">
+        <button class="modalClose" id="modalClose">✕</button>
+        <div class="modalBody" id="modalBody"></div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <p>数据来自 Discogs，请遵守其 API 使用条款。</p>
+    </footer>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
