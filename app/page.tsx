@@ -33,8 +33,7 @@ type ReleaseDetail = {
   styles?: string[];
   country?: string;
   barcode?: string[];
-  notes?: string;
-  tracklist?: { position: string; title: string; duration?: string }[];
+  identifiers?: { type: string; value: string }[];
 };
 
 export default function Home() {
@@ -46,6 +45,14 @@ export default function Home() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [selectedRelease, setSelectedRelease] = useState<ReleaseDetail | null>(null);
   const [dragOver, setDragOver] = useState(false);
+
+  const identifiers = selectedRelease?.identifiers ?? [];
+  const ifpiCodes = identifiers
+    .filter((id) => id.type.toLowerCase().includes('ifpi'))
+    .map((id) => id.value);
+  const matrixCodes = identifiers
+    .filter((id) => id.type.toLowerCase().includes('matrix'))
+    .map((id) => id.value);
 
   const onSearch = useCallback(async () => {
     const q = barcode.trim();
@@ -259,18 +266,16 @@ export default function Home() {
                   厂牌：{selectedRelease.labels.map((l) => l.name).join(', ')}
                 </p>
               ) : null}
-              {selectedRelease.genres?.length ? (
-                <p className={styles.detailMeta}>
-                  流派：{selectedRelease.genres.join(', ')}
-                </p>
-              ) : null}
               {selectedRelease.barcode?.length ? (
                 <p className={styles.detailMeta}>
                   条形码：{selectedRelease.barcode.join(', ')}
                 </p>
               ) : null}
-              {selectedRelease.notes && (
-                <p className={styles.detailNotes}>{selectedRelease.notes}</p>
+              {ifpiCodes.length > 0 && (
+                <p className={styles.detailMeta}>IFPI：{ifpiCodes.join(', ')}</p>
+              )}
+              {matrixCodes.length > 0 && (
+                <p className={styles.detailMeta}>Matrix 编码：{matrixCodes.join(', ')}</p>
               )}
               <a
                 href={selectedRelease.resource_url}
@@ -280,22 +285,6 @@ export default function Home() {
               >
                 在 Discogs 上查看 →
               </a>
-              {selectedRelease.tracklist?.length ? (
-                <div className={styles.tracklist}>
-                  <h4>曲目</h4>
-                  <ol>
-                    {selectedRelease.tracklist.map((t, i) => (
-                      <li key={i}>
-                        <span className={styles.trackPos}>{t.position}</span>
-                        <span className={styles.trackTitle}>{t.title}</span>
-                        {t.duration && (
-                          <span className={styles.trackDur}>{t.duration}</span>
-                        )}
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              ) : null}
             </div>
           </div>
         </section>

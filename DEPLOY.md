@@ -31,6 +31,36 @@
 
 完成后，仓库里应能看到 `app`、`public`、`package.json`、`README.md` 等，然后直接进行下面的 **二、在 Vercel 部署**。
 
+**⚠️ 重要：验证上传是否成功**
+
+上传后，在 GitHub 仓库页面确认以下结构存在：
+
+```
+你的仓库名/
+├── app/                    ← 必须有这个文件夹！
+│   ├── api/
+│   │   ├── discogs/
+│   │   └── upload/
+│   ├── globals.css
+│   ├── layout.tsx
+│   ├── page.tsx
+│   └── page.module.css
+├── public/                  ← 必须有这个文件夹（可为空）
+├── .env.example
+├── .gitignore
+├── next.config.js
+├── package.json             ← 必须有这个文件！
+├── README.md
+├── tsconfig.json
+└── DEPLOY.md
+```
+
+**如果看不到 `app` 文件夹**：说明上传时文件夹结构丢失了。需要重新上传：
+1. 在 GitHub 仓库页面，点击 **Add file** → **Create new file**
+2. 文件名填 `app/.gitkeep`（这会创建 `app` 文件夹）
+3. 点击 **Commit new file**
+4. 然后再次 **Add file** → **Upload files**，这次**只上传 `app` 文件夹里的所有内容**（`api`、`globals.css`、`layout.tsx` 等），拖到上传区域后，确保文件路径显示为 `app/xxx` 而不是直接是 `xxx`
+
 ---
 
 ### 方式 B：使用 Git 命令行（已安装 Git 时可用）
@@ -112,7 +142,15 @@ git push -u origin main
 
 ## 四、常见问题
 
-**Q: 部署后打开页面显示“未配置 DISCOGS_TOKEN”**  
+**Q: Vercel 部署报错 "Couldn't find any `pages` or `app` directory"**  
+A: 这说明 GitHub 仓库中缺少 `app` 文件夹。解决方法：
+1. 在 GitHub 仓库页面检查是否能看到 `app` 文件夹
+2. 如果看不到，说明上传时文件夹结构丢失了
+3. 重新上传：**Add file** → **Upload files**，这次**只选择 `app` 文件夹**（不是里面的文件），拖到上传区域
+4. 确保上传后仓库根目录能看到 `app` 文件夹，点进去能看到 `api`、`layout.tsx`、`page.tsx` 等
+5. 如果还是不行，可以尝试：先创建 `app` 文件夹（用 **Create new file** 创建 `app/.gitkeep`），然后再上传 `app` 里的文件
+
+**Q: 部署后打开页面显示"未配置 DISCOGS_TOKEN"**  
 A: 在 Vercel 项目 **Settings → Environment Variables** 里添加 `DISCOGS_TOKEN` 并重新部署。
 
 **Q: 图片上传在 Vercel 上不工作**  
@@ -120,3 +158,9 @@ A: 在 Vercel 项目 **Storage** 中创建 **Blob**，让 Vercel 自动注入 `B
 
 **Q: 想用自定义域名**  
 A: 在 Vercel 项目 **Settings → Domains** 中添加你的域名并按提示配置 DNS。
+
+**Q: 如何确认 GitHub 仓库结构正确？**  
+A: 在 GitHub 仓库页面，应该能看到：
+- 根目录有 `app`、`public`、`package.json` 等
+- 点击 `app` 文件夹，应该能看到 `api`、`layout.tsx`、`page.tsx` 等
+- 点击 `app/api`，应该能看到 `discogs` 和 `upload` 两个文件夹
