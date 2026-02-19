@@ -71,34 +71,13 @@ export default function Home() {
         setError(data.error || '请求失败');
         return;
       }
-      const list: SearchResult[] = data.results || [];
+      const list: ReleaseDetail[] = data.releases || [];
       if (list.length === 0) {
         setError('未找到匹配的专辑');
         return;
       }
 
-      const detailResponses = await Promise.all(
-        list.map((item) =>
-          fetch(`/api/discogs?releaseId=${item.id}`).then(async (r) => {
-            const json = await r.json();
-            if (!r.ok) {
-              return null;
-            }
-            return json as ReleaseDetail;
-          })
-        )
-      );
-
-      const validDetails = detailResponses.filter(
-        (d): d is ReleaseDetail => d !== null
-      );
-
-      if (validDetails.length === 0) {
-        setError('未能获取任何专辑详情');
-        return;
-      }
-
-      setReleaseDetails(validDetails);
+      setReleaseDetails(list);
     } finally {
       setLoading(false);
     }

@@ -47,7 +47,8 @@ export async function GET(request: NextRequest) {
     const url = new URL(DISCOGS_SEARCH);
     url.searchParams.set('barcode', barcode.trim());
     url.searchParams.set('type', 'release');
-    url.searchParams.set('per_page', '10');
+    // 限制每次最多返回 5 条，减轻卡顿
+    url.searchParams.set('per_page', '5');
 
     const res = await fetch(url.toString(), { headers });
     if (!res.ok) {
@@ -57,8 +58,26 @@ export async function GET(request: NextRequest) {
         { status: res.status }
       );
     }
-    const data = await res.json();
-    return NextResponse.json(data);
+    const searchData = await res.json();
+    const results: Array<{ id?: number }> = searchData.results ?? [];
+
+    if (!results.length) {
+      return NextResponse.json({ releases: [] });
+    }
+
+    const detailResponses = await Promise.all(
+      results
+        .map((item) => item.id)
+        .filter((id): id is number => typeof id === 'number')
+        .map((id) =>
+          fetch(`${DISCOGS_RELEASE}/${id}`, { headers }).then(async (r) =>
+            r.ok ? r.json() : null
+          )
+        )
+    );
+
+    const releases = detailResponses.filter((d) => d != null);
+    return NextResponse.json({ releases });
   } catch (e) {
     console.error('Discogs API error:', e);
     return NextResponse.json(
