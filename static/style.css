@@ -597,6 +597,18 @@ textarea {
     text-align: center;
 }
 
+.factoryLine {
+    list-style: disc;
+    font-size: 1rem;
+    margin-top: 0.1rem;
+    color: var(--text);
+}
+
+.factoryInfo {
+    color: var(--accent);
+    font-weight: 500;
+}
+
 /* =====================
    Pagination
    ===================== */

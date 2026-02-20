@@ -51,6 +51,15 @@ function setLoading(state) {
     searchBtn.textContent = state ? '查询中…' : '查询';
 }
 
+function setUploadLoading(state) {
+    fileInput.disabled = state;
+    if (state) {
+        uploadZone.classList.add('dragOver');
+    } else {
+        uploadZone.classList.remove('dragOver');
+    }
+}
+
 function groupIdentifiers(identifiers) {
     if (!identifiers || !identifiers.length) return [];
     // 先按 variant 拆分
@@ -78,7 +87,8 @@ function groupIdentifiers(identifiers) {
         ) {
             groups[variantLabel].push({
                 type: id.type,
-                value: value
+                value: value,
+                factoryInfo: id.factory_info || ''
             });
         }
     });
@@ -89,20 +99,36 @@ function groupIdentifiers(identifiers) {
     variants.forEach((variant, vIdx) => {
         const items = groups[variant];
         if (!items.length) return;
-        let current = { label: variants.length > 1 ? `组合 ${vIdx + 1}` : '', matrix: '', outerSID: '', innerSID: '' };
+        let current = {
+            label: variants.length > 1 ? `组合 ${vIdx + 1}` : '',
+            matrix: '',
+            outerSID: '',
+            outerSIDFactoryInfo: '',
+            innerSID: '',
+            innerSIDFactoryInfo: ''
+        };
         items.forEach((item, idx) => {
             const t = item.type.toLowerCase();
             if (t.includes('matrix / runout')) {
                 // 如果当前已有 matrix，说明是新一组
                 if (current.matrix || current.outerSID || current.innerSID) {
                     result.push(current);
-                    current = { label: variants.length > 1 ? `组合 ${vIdx + 1}` : '', matrix: '', outerSID: '', innerSID: '' };
+                    current = {
+                        label: variants.length > 1 ? `组合 ${vIdx + 1}` : '',
+                        matrix: '',
+                        outerSID: '',
+                        outerSIDFactoryInfo: '',
+                        innerSID: '',
+                        innerSIDFactoryInfo: ''
+                    };
                 }
                 current.matrix = item.value;
             } else if (t.includes('mastering sid code') || t.includes('ifpi l')) {
                 current.outerSID = item.value;
+                current.outerSIDFactoryInfo = item.factoryInfo || '';
             } else if (t.includes('mould sid code') || t.includes('ifpi 9') || t.includes('ifpi 94') || t.includes('ifpi a')) {
                 current.innerSID = item.value;
+                current.innerSIDFactoryInfo = item.factoryInfo || '';
             }
         });
         // 最后一组
@@ -260,6 +286,16 @@ function renderModal(r) {
     const imgSrc = (r.images && r.images[0]?.uri) || r.cover_image || r.thumb;
     const groups = groupIdentifiers(r.identifiers);
 
+    const renderSidLine = (label, value) => {
+        if (!value) return '';
+        return `<li><span class="metaLabel">${label}</span>${escHtml(value)}</li>`;
+    };
+
+    const renderFactoryLine = (factoryInfo) => {
+        if (!factoryInfo) return '';
+        return `<li class="factoryLine"><span class="metaLabel">制造商：</span><span class="factoryInfo">${escHtml(factoryInfo)}</span></li>`;
+    };
+
     const artistsHtml = r.artists?.length
         ? `<p class="detailArtists">${escHtml(r.artists.map(a => a.name).join(', '))}</p>` : '';
 
@@ -274,8 +310,10 @@ function renderModal(r) {
             ${g.label ? `<div class="variantTitle">${escHtml(g.label)}</div>` : ''}
             <ul class="matrixList">
                 ${g.matrix ? `<li><span class="metaLabel">Matrix 编码：</span>${escHtml(g.matrix)}</li>` : ''}
-                ${g.outerSID ? `<li><span class="metaLabel">外圈码：</span>${escHtml(g.outerSID)}</li>` : ''}
-                ${g.innerSID ? `<li><span class="metaLabel">内圈码：</span>${escHtml(g.innerSID)}</li>` : ''}
+                ${renderSidLine('外圈码：', g.outerSID)}
+                ${renderSidLine('内圈码：', g.innerSID)}
+                ${renderFactoryLine(g.outerSIDFactoryInfo)}
+                ${renderFactoryLine(g.innerSIDFactoryInfo)}
             </ul>
         </div>
     `).join('') : '<div class="variantGroup"><span>无 Matrix/SID 信息</span></div>';
@@ -345,10 +383,35 @@ function handleFile(file) {
 
     const fd = new FormData();
     fd.append('file', file);
+    showError('');
+    setUploadLoading(true);
     fetch('/api/upload', { method: 'POST', body: fd })
-        .then(r => r.json())
-        .then(data => { if (data.url) uploadedBadge.style.display = ''; })
-        .catch(() => showError('上传失败'));
+        .then(async r => {
+            const data = await r.json().catch(() => ({}));
+            if (!r.ok) {
+                throw new Error(data.error || '上传失败');
+            }
+            return data;
+        })
+        .then(data => {
+            if (!data.barcode) {
+                throw new Error('未能从图片中正确识别条形码，请尝试手动输入');
+            }
+            uploadedBadge.style.display = '';
+            barcodeInput.value = data.barcode;
+            barcodeValue = data.barcode;
+            allReleases = [];
+            filteredReleases = [];
+            currentPage = 1;
+            totalPages = 1;
+            resultsSection.style.display = 'none';
+            fetchReleases(1);
+        })
+        .catch(err => {
+            uploadedBadge.style.display = 'none';
+            showError(err.message || '上传失败');
+        })
+        .finally(() => setUploadLoading(false));
 }
 
 /* =====================
